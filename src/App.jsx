@@ -5,6 +5,8 @@ import SelectCharacter from './Components/SelectCharacter';
 import { CONTRACT_ADDRESS ,transformCharacterData} from './constants';
 import myEpicGame from './utils/MyEpicGame.json';
 import { ethers } from 'ethers';
+import Arena from './Components/Arena';
+import LoadingIndicator from './Components/LoadingIndicator';
 
 
 // Constants
@@ -17,6 +19,8 @@ const App = () => {
    */
   const [currentAccount, setCurrentAccount] = useState(null);
   const [characterNFT, setCharacterNFT] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
   /*
    * Start by creating a new action that we will run on component load
    */
@@ -30,6 +34,10 @@ const App = () => {
 
     if (!ethereum) {
       console.log('Make sure you have MetaMask!');
+      /*
+         * We set isLoading here because we use return in the next line
+         */
+        setIsLoading(false);
       return;
     } else {
       console.log('We have the ethereum object', ethereum);   
@@ -52,9 +60,19 @@ const App = () => {
     } catch (error) {
       console.log(error);
     }
+    /*
+     * We release the state property after all the function logic
+     */
+    setIsLoading(false);
   };
   // Render Methods
 const renderContent = () => {
+  /*
+   * If the app is currently loading, just render out LoadingIndicator
+   */
+  if (isLoading) {
+    return <LoadingIndicator />;
+  }
   /*
    * Scenario #1
    */
@@ -78,6 +96,11 @@ const renderContent = () => {
      */
   } else if (currentAccount && !characterNFT) {
     return <SelectCharacter setCharacterNFT={setCharacterNFT} />;
+    /*
+	* If there is a connected wallet and characterNFT, it's time to battle!
+	*/
+  }else if(currentAccount && characterNFT) {
+    return <Arena characterNFT={characterNFT} setCharacterNFT={setCharacterNFT}/>;
   }
 };
  /*
@@ -112,6 +135,10 @@ const renderContent = () => {
    * This runs our function when the page loads.
    */
   useEffect(() => {
+    /*
+   * Anytime our component mounts, make sure to immiediately set our loading state
+   */
+    setIsLoading(true);
     checkIfWalletIsConnected();
     const checkNetwork = async () => {
   try { 
@@ -138,7 +165,7 @@ const renderContent = () => {
       signer
     );
 
-    const txn = await gameContract.checkIfUserHasNFT();
+    const txn = await gameContract.checkIfUserHasNFT();    
     
     if (txn.name) {
       console.log('User has character NFT');
@@ -146,6 +173,10 @@ const renderContent = () => {
     } else {
       console.log('No character NFT found');
     }
+    /*
+     * Once we are done with all the fetching, set loading state to false
+     */
+    setIsLoading(false);
   };
 
   /*
